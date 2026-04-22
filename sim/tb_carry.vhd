@@ -6,6 +6,7 @@ entity tb_carry is
 end tb_carry;
 
 architecture sim of tb_carry is
+
     -- Sinais de interface
     signal SW : std_logic_vector(10 downto 0);
     signal HEX0, HEX2, HEX3, HEX4, HEX5, HEX6, HEX7 : std_logic_vector(6 downto 0);

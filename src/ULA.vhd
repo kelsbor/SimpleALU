@@ -80,10 +80,11 @@ architecture interface of ULA is
 						res_Mul when "110",
 						"0000" when others;
 	
+    -- So atribui os sinais com a operação adequada
     with opcode select
         sig_operation <= 
-            '1' when "100",
-            '1' when "101",
+            '1' when "100", -- Soma
+            '1' when "101", -- Subtração
             '0' when others;
 	
     with opcode select
@@ -104,9 +105,12 @@ architecture interface of ULA is
             carry_out_somasub when "101",
             '0' when others;
     
+    -- Associa as flags aos devidos LEDS
     LEDR(0) <= carry_out_flag;
     LEDR(1) <= zero_flag;
     LEDR(2) <= overflow_flag;
+
+    -- So ativa os LEDS de comparação com a operação adequada
     with opcode select
         LEDR(3) <= equ when "111", '0' when others;
     with opcode select
@@ -127,7 +131,8 @@ architecture interface of ULA is
             B when others;
     
     op_filtro <= "0" & opcode;
-
+    
+    -- Instanciação dos displays
     display_opcode : display_logic port map (
         number => op_filtro,
         is_signed => '0',
