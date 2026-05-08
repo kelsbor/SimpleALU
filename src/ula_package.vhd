@@ -1,7 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 
-package ULA is
+package ula_package is
     component full_adder is
         port (
             carry_in : in STD_LOGIC;
@@ -11,4 +11,4 @@ package ULA is
             carry_out : out STD_LOGIC
         );
     end component;
-end package ULA;
+end package ula_package;

@@ -1,0 +1,9 @@
+*.cf
+*.vcd
+*.ghw
+*.qsf
+*.qws
+*.qpf
+
+db/
+output_files/
