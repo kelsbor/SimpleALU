@@ -11,4 +11,21 @@ package ula_package is
             carry_out : out STD_LOGIC
         );
     end component;
+
+    component somador_4b is
+        port (
+            Cin : in std_logic;
+		    A: in std_logic_vector(3 to 0);
+		    B: in std_logic_vector(3 to 0);
+		    soma : out std_logic_vector(3 to 0);
+		    carry_out: out std_logic
+        );
+    end component;
+
+    component mul_2b is
+        port (
+            a,b : in std_logic_vector(1 downto 0);
+            mul : out std_logic_vector(3 downto 0)
+        );
+        end component;
 end package ula_package;
