@@ -27,5 +27,12 @@ package ula_package is
             a,b : in std_logic_vector(1 downto 0);
             mul : out std_logic_vector(3 downto 0)
         );
-        end component;
+    end component;
+	 
+    component comparador is
+        port (
+            a,b : in std_logic_vector(3 downto 0);
+            grt, equ, lst : out std_logic
+        );
+    end component;
 end package ula_package;
