@@ -12,13 +12,13 @@ package ula_package is
         );
     end component;
 
-    component somador_4b is
+    component somasub_4b is
         port (
             Cin : in std_logic;
-		    A: in std_logic_vector(3 to 0);
-		    B: in std_logic_vector(3 to 0);
-		    soma : out std_logic_vector(3 to 0);
-		    carry_out: out std_logic
+		    A: in std_logic_vector(3 downto 0);
+		    B: in std_logic_vector(3 downto 0);
+		    soma : out std_logic_vector(3 downto 0);
+		    carry_out, overflow, zero : out std_logic
         );
     end component;
 
