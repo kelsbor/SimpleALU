@@ -2,6 +2,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 
 package ula_package is
+    -- Declaração dos componentes utilizados na ULA
+
     component full_adder is
         port (
             carry_in : in STD_LOGIC;
@@ -33,6 +35,15 @@ package ula_package is
         port (
             a,b : in std_logic_vector(3 downto 0);
             grt, equ, lst : out std_logic
+        );
+    end component;
+
+    component display_logic is 
+        port (
+            number : in std_logic_vector(3 downto 0);
+            is_signed : in std_logic;
+            display_hex : out std_logic_vector(6 downto 0);
+            sinal_hex : out std_logic_vector(6 downto 0)
         );
     end component;
 end package ula_package;

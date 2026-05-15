@@ -1,6 +1,5 @@
 *.cf
 *.vcd
-*.ghw
 *.qsf
 *.qws
 *.qpf

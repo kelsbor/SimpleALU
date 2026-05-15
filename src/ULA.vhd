@@ -6,120 +6,151 @@ use work.ula_package.all;
 
 entity ULA is
 	port (
-		SW: in std_logic_vector(10 downto 0);
-		
+		-- Switches de entrada para selação dos numeros e da operação
+        SW: in std_logic_vector(10 downto 0);
+
 		-- Responsavel por mostrar o opcode selecionado
 		HEX0: out std_logic_vector(6 downto 0); -- Opcode selecionado
+
 		HEX2: out std_logic_vector(6 downto 0); -- Representação do Número B
+        HEX3: out std_logic_vector(6 downto 0); -- Sinal do número B, caso seja negativo.
+
 		HEX4: out std_logic_vector(6 downto 0); -- Representação do Número A
-		HEX6: out std_logic_vector(6 downto 0); -- Resultado da operação selecionada (opcode)
+        HEX5: out std_logic_vector(6 downto 0); -- Sinal do número A, caso seja negativo.
+
+		HEX6: out std_logic_vector(6 downto 0); -- Resultado da operação selecionada
+        HEX7: out std_logic_vector(6 downto 0); -- Sinal da Operação, caso seja negativo.
+
 		LEDR: out std_logic_vector(5 downto 0) -- Flags (overflow, zero, cout, comparações)
 	);
 	
 end entity ULA;
 
 architecture interface of ULA is
+    -- Sinais de entrada
 	signal A,B : std_logic_vector(3 downto 0);
+    signal half_A, half_B: std_logic_vector(1 downto 0);
 	signal opcode : std_logic_vector (2 downto 0);
+
+    -- Sinal para display de multiplicação (mostra apenas os 2 bits de entrada)
+    signal A_filtro, B_filtro : std_logic_vector(3 downto 0);
+
+    -- Sinal para mostrar o código opcode no display (formato 4 bits)
+    signal op_filtro : std_logic_vector(3 downto 0);
+
+    -- Resultados das operações
 	signal Res_And, Res_Or, Res_Not, Res_Soma, Res_Sub, Res_Mul : std_logic_vector(3 downto 0);
-	signal Res_Comp : std_logic_vector(2 downto 0);
 	signal resfinal : std_logic_vector(3 downto 0);
-	signal carry_out : std_logic;
+
+    -- Sinais para cada operação para não haver interferências
+	signal carry_out_soma, carry_out_sub, overflow_soma, overflow_sub, zero_soma, zero_sub : std_logic;
+	signal lst, equ, grt: std_logic;
 	
+    -- Sinal final das flags que vão ativar os LEDs
+    signal overflow_flag, zero_flag, carry_out_flag: std_logic;
+
+    -- Controle de sinalização das operações (sub e soma)
+    signal sig_operation : std_logic;
+
 	begin
+    -- Atribuição dos sinais de entrada 
 	A <= SW(10 downto 7);
 	B <= SW(6 downto 3);
 	opcode <= SW(2 downto 0);
-	
-	-- Mapeamos as saídas do display de acordo com os valores de A e B, 
-	-- atribuidos através dos switches acionados.
-	-- O uso da notação x"0" simplifica a digitação do binário por extenso "0000".
-	
-	Res_And <= A and B;
+
+    -- Atribuição dos sinais de saída
+    Res_And <= A and B;
 	Res_Not <= not B;
 	Res_Or <= A or B;
-	
-	somador : somador_4b port map ('0', A, B, Res_Soma, carry_out);
-	subtrator : somador_4b port map ('1', A,B,Res_Sub, carry_out);
+
+	somador : somasub_4b port map ('0', A, B, Res_Soma, carry_out_soma, overflow_soma, zero_soma);
+	subtrator : somasub_4b port map ('1', A,B,Res_Sub, carry_out_sub, overflow_sub, zero_sub);
+	comparador_inst : comparador port map (A,B, grt, equ, lst);
 	multiplicador : mul_2b port map (A(1 downto 0), B(1 downto 0), res_Mul);
-	comparar : comparador port map (A,B, Res_comp(2), Res_Comp(1), Res_Comp(0));
 	
-	
+    -- A partir do valor de Opcode selecionado é selecionado o valor da operação correspondente
 	with opcode select
-		HEX0 <=         "1000000" when "000",
-						"1111001" when "001",
-                        "0100100" when "010",
-                        "0110000" when "011",
-                        "0011001" when "100",
-                        "0010010" when "101",
-                        "0000010" when "110",
-						"1111111" when others;
-	
-	with opcode select
-		resfinal <=     res_And when "001",
-                        res_Not when "010",
-                        res_Or when "011",
+		resfinal <=     res_And when "001", -- Não sinalizado
+                        res_Not when "010", -- Não sinalizado
+                        res_Or when "011", -- Não sinalizado
 						res_Soma when "100",
 						res_Sub when "101",
-						res_Mul when "110",
+						res_Mul when "110", -- Não é sinalizado
 						"0000" when others;
-						 
-						 
-	with resfinal select
-		Hex6 <=    "1000000" when "0000", 
-                   "1111001" when "0001",
-                   "0100100" when "0010",
-                   "0110000" when "0011",
-                   "0011001" when "0100",
-                   "0010010" when "0101",
-                   "0000010" when "0110",
-                   "1111000" when "0111",
-                   "0000000" when "1000", -- (-8)
-                   "1111000" when "1001", -- (-7)
-                   "0000010" when "1010", -- (-6)
-                   "0010010" when "1011", -- (-5)
-                   "0011001" when "1100", -- (-4)
-                   "0110000" when "1101", -- (-3)
-                   "0100100" when "1110", -- (-2)
-                   "1111001" when "1111", --(-1)
-                   "1111111" when others;
 	
-	with A select
-		HEX4 <=  "1000000" when "0000", 
-                   "1111001" when "0001",
-                   "0100100" when "0010",
-                   "0110000" when "0011",
-                   "0011001" when "0100",
-                   "0010010" when "0101",
-                   "0000010" when "0110",
-                   "1111000" when "0111",
-                   "0000000" when "1000", -- (-8)
-                   "1111000" when "1001", -- (-7)
-                   "0000010" when "1010", -- (-6)
-                   "0010010" when "1011", -- (-5)
-                   "0011001" when "1100", -- (-4)
-                   "0110000" when "1101", -- (-3)
-                   "0100100" when "1110", -- (-2)
-                   "1111001" when "1111", --(-1)
-                   "1111111" when others;
+    with opcode select
+        sig_operation <= 
+            '1' when "100",
+            '1' when "101",
+            '0' when others;
+	
+    with opcode select
+        overflow_flag <= 
+            overflow_soma when "100",
+            overflow_sub when "101",
+            '0' when others;
 
-	with B select
-		HEX2 <=  "1000000" when "0000", 
-                   "1111001" when "0001",
-                   "0100100" when "0010",
-                   "0110000" when "0011",
-                   "0011001" when "0100",
-                   "0010010" when "0101",
-                   "0000010" when "0110",
-                   "1111000" when "0111",
-                   "0000000" when "1000", -- (-8)
-                   "1111000" when "1001", -- (-7)
-                   "0000010" when "1010", -- (-6)
-                   "0010010" when "1011", -- (-5)
-                   "0011001" when "1100", -- (-4)
-                   "0110000" when "1101", -- (-3)
-                   "0100100" when "1110", -- (-2)
-                   "1111001" when "1111", --(-1)
-                   "1111111" when others;
-	
+    with opcode select
+        zero_flag <= 
+            zero_soma when "100",
+            zero_sub when "101",
+            '0' when others;
+
+    with opcode select
+        carry_out_flag <= 
+            carry_out_soma when "100",
+            carry_out_sub when "101",
+            '0' when others;
+    
+    LEDR(0) <= carry_out_flag;
+    LEDR(1) <= zero_flag;
+    LEDR(2) <= overflow_flag;
+    with opcode select
+        LEDR(3) <= equ when "111", '0' when others;
+    with opcode select
+        LEDR(4) <= grt when "111", '0' when others;
+    with opcode select
+        LEDR(5) <= lst when "111", '0' when others;
+
+    -- Entradas filtradas para o display A e B para a operação de multiplicação e NOP
+    with opcode select
+        A_filtro <= 
+            "00" & A(1 downto 0) when "110",
+            "0000" when "000",
+            A when others;
+    with opcode select
+        B_filtro <= 
+            "00" & B(1 downto 0) when "110",
+            "0000" when "000",
+            B when others;
+    
+    op_filtro <= "0" & opcode;
+
+    display_opcode : display_logic port map (
+        number => op_filtro,
+        is_signed => '0',
+        display_hex => HEX0,
+        sinal_hex => open
+    );
+
+    display_A : display_logic port map (
+        number => A_filtro,
+        is_signed => sig_operation,
+        display_hex => HEX4,
+        sinal_hex => HEX5
+    );
+    
+    display_B : display_logic port map (
+        number => B_filtro,
+        is_signed => sig_operation,
+        display_hex => HEX2,
+        sinal_hex => HEX3
+    );
+
+    display_result : display_logic port map (
+        number => resfinal,
+        is_signed => sig_operation,
+        display_hex => HEX6,
+        sinal_hex => HEX7
+    );
 end interface;
