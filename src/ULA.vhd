@@ -29,7 +29,6 @@ end entity ULA;
 architecture interface of ULA is
     -- Sinais de entrada
 	signal A,B : std_logic_vector(3 downto 0);
-    signal half_A, half_B: std_logic_vector(1 downto 0);
 	signal opcode : std_logic_vector (2 downto 0);
 
     -- Sinal para display de multiplicação (mostra apenas os 2 bits de entrada)
@@ -39,11 +38,12 @@ architecture interface of ULA is
     signal op_filtro : std_logic_vector(3 downto 0);
 
     -- Resultados das operações
-	signal Res_And, Res_Or, Res_Not, Res_Soma, Res_Sub, Res_Mul : std_logic_vector(3 downto 0);
+	signal Res_And, Res_Or, Res_Not, Res_SomaSub, Res_Mul : std_logic_vector(3 downto 0);
 	signal resfinal : std_logic_vector(3 downto 0);
 
-    -- Sinais para cada operação para não haver interferências
-	signal carry_out_soma, carry_out_sub, overflow_soma, overflow_sub, zero_soma, zero_sub : std_logic;
+    -- Sinais do somador/subtrator
+	signal carry_out_somasub, overflow_somasub, zero_somasub : std_logic;
+	signal cin_somasub : std_logic;
 	signal lst, equ, grt: std_logic;
 	
     -- Sinal final das flags que vão ativar os LEDs
@@ -63,19 +63,21 @@ architecture interface of ULA is
 	Res_Not <= not B;
 	Res_Or <= A or B;
 
-	somador : somasub_4b port map ('0', A, B, Res_Soma, carry_out_soma, overflow_soma, zero_soma);
-	subtrator : somasub_4b port map ('1', A,B,Res_Sub, carry_out_sub, overflow_sub, zero_sub);
+	-- O Cin do somador/subtrator: '1' para subtração e '0' para soma
+	cin_somasub <= '1' when opcode = "101" else '0';
+
+	somasub : somasub_4b port map (cin_somasub, A, B, Res_SomaSub, carry_out_somasub, overflow_somasub, zero_somasub);
 	comparador_inst : comparador port map (A,B, grt, equ, lst);
 	multiplicador : mul_2b port map (A(1 downto 0), B(1 downto 0), res_Mul);
 	
     -- A partir do valor de Opcode selecionado é selecionado o valor da operação correspondente
 	with opcode select
-		resfinal <=     res_And when "001", -- Não sinalizado
-                        res_Not when "010", -- Não sinalizado
-                        res_Or when "011", -- Não sinalizado
-						res_Soma when "100",
-						res_Sub when "101",
-						res_Mul when "110", -- Não é sinalizado
+		resfinal <=     Res_And when "001",
+                        Res_Not when "010",
+                        Res_Or when "011",
+						Res_SomaSub when "100",
+						Res_SomaSub when "101",
+						res_Mul when "110",
 						"0000" when others;
 	
     with opcode select
@@ -86,20 +88,20 @@ architecture interface of ULA is
 	
     with opcode select
         overflow_flag <= 
-            overflow_soma when "100",
-            overflow_sub when "101",
+            overflow_somasub when "100",
+            overflow_somasub when "101",
             '0' when others;
 
     with opcode select
         zero_flag <= 
-            zero_soma when "100",
-            zero_sub when "101",
+            zero_somasub when "100",
+            zero_somasub when "101",
             '0' when others;
 
     with opcode select
         carry_out_flag <= 
-            carry_out_soma when "100",
-            carry_out_sub when "101",
+            carry_out_somasub when "100",
+            carry_out_somasub when "101",
             '0' when others;
     
     LEDR(0) <= carry_out_flag;
